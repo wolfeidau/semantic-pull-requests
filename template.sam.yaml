@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "wolfeidau: This template deploys semanitic-pull-requests to AWS Lambda."
+
+Parameters:
+  AppID:
+    Type: String
+  PrivateKey:
+    NoEcho: true
+    Type: String
+  WebhookSecret:
+    NoEcho: true
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs10.x
+
+Resources:
+  ProbotFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./handler.zip
+      Handler: handler.handler
+      Environment:
+        Variables:
+          APP_ID: !Ref AppID
+          PRIVATE_KEY: !Ref PrivateKey
+          WEBHOOK_SECRET: !Ref WebhookSecret
+          LOG_LEVEL: "trace"
+          NODE_ENV: production
+      Events:
+        Probot:
+          Type: Api
+          Properties:
+            Path: /v1/hooks
+            Method: ANY
+
+Outputs:
+  ProbotApi:
+    Description: "API Gateway endpoint URL which accepts webhooks events from GitHub"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/v1/hooks"
+  ProbotFunction:
+    Description: "Probot Lambda Function ARN"
+    Value: !GetAtt ProbotFunction.Arn
+  ProbotFunctionIamRole:
+    Description: "Implicit IAM Role created for Probot Function"
+    Value: !GetAtt ProbotFunctionRole.Arn
